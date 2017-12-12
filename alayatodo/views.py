@@ -85,8 +85,9 @@ def todos_POST():
             % (session['user']['id'], request.form.get('description', ''))
         )
         g.db.commit()
+        flash('TODO successfully added', 'success')
     else:
-        flash('TODO Description cannot be empty','error')
+        flash('TODO Description cannot be empty', 'danger')
     return redirect('/todo')
 
 def todo_markdone(id, done):
@@ -110,4 +111,5 @@ def todo_delete(id):
         return redirect('/login')
     g.db.execute("DELETE FROM todos WHERE id ='%s'" % id)
     g.db.commit()
+    flash('TODO successfully removed', 'success')
     return redirect('/todo')
