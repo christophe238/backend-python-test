@@ -9,3 +9,24 @@ body {
 .strikethrough {
   text-decoration: line-through;
 }
+
+.pagination > ul {
+  list-style: none;
+  padding: .6em;
+  padding-left: 0;
+  width: 40em;
+  margin: .5em;
+  margin-left: 0;
+  font-size: 12px;
+}
+
+.pagination > ul > li {
+  color: #6aa6ed;
+  margin: 0 .2em;
+  font-size: 150%;
+  display: inline;
+}
+
+.pagination > ul > li:hover{
+  cursor: pointer;
+}

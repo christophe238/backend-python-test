@@ -8,7 +8,7 @@ from flask import (
     flash,
     jsonify
     )
-
+from flask_paginate import Pagination, get_page_parameter
 
 @app.route('/')
 def home():
@@ -66,9 +66,20 @@ def todo_json(id):
 def todos():
     if not session.get('logged_in'):
         return redirect('/login')
-    cur = g.db.execute("SELECT * FROM todos")
+
+    per_page = 5
+    page = request.args.get(get_page_parameter(), type=int, default=1)
+
+    cur = g.db.execute("SELECT COUNT(*) FROM todos")
+    total_items = cur.fetchone()[0]
+
+    cur = g.db.execute("SELECT * FROM todos LIMIT %s OFFSET %s" %(per_page, per_page*(page-1)))
     todos = cur.fetchall()
-    return render_template('todos.html', todos=todos)
+
+    pagination = Pagination(page=page, per_page_parameter=per_page, total=total_items)
+
+
+    return render_template('todos.html', todos=todos, pagination=pagination)
 
 
 @app.route('/todo', methods=['POST'])
