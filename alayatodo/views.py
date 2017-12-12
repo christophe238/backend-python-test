@@ -79,6 +79,20 @@ def todos_POST():
         flash('TODO Description cannot be empty','error')
     return redirect('/todo')
 
+def todo_markdone(id, done):
+    if not session.get('logged_in'):
+        return redirect('/login')
+    g.db.execute("UPDATE todos SET done = '%s' WHERE id ='%s'" % (done, id))
+    g.db.commit()
+    return redirect('/todo')
+
+@app.route('/todo/done/<id>', methods=['POST'])
+def todo_done(id):
+    return todo_markdone(id, 1)
+
+@app.route('/todo/undo/<id>', methods=['POST'])
+def todo_undo(id):
+    return todo_markdone(id, 0)
 
 @app.route('/todo/<id>', methods=['POST'])
 def todo_delete(id):

@@ -5,3 +5,7 @@ body {
 .login-form > div {
     margin-top: 10px;
 }
+
+.strikethrough {
+  text-decoration: line-through;
+}
