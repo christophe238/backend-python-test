@@ -5,7 +5,8 @@ from flask import (
     render_template,
     request,
     session,
-    flash
+    flash,
+    jsonify
     )
 
 
@@ -44,11 +45,20 @@ def logout():
     return redirect('/')
 
 
-@app.route('/todo/<id>', methods=['GET'])
-def todo(id):
+def render_todo(id, json=False):
     cur = g.db.execute("SELECT * FROM todos WHERE id ='%s'" % id)
     todo = cur.fetchone()
+    if json:
+        return jsonify(dict(todo))
     return render_template('todo.html', todo=todo)
+
+@app.route('/todo/<id>', methods=['GET'])
+def todo(id):
+    return render_todo(id)
+
+@app.route('/todo/<id>/json', methods=['GET'])
+def todo_json(id):
+    return render_todo(id, json=True)
 
 
 @app.route('/todo', methods=['GET'])
