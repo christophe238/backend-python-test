@@ -1,4 +1,4 @@
-from alayatodo import app
+from alayatodo import app, db
 from flask import (
     g,
     redirect,
@@ -9,6 +9,7 @@ from flask import (
     jsonify
     )
 from flask_paginate import Pagination, get_page_parameter
+from orm import (User, Todo)
 
 @app.route('/')
 def home():
@@ -24,12 +25,12 @@ def login():
 
 @app.route('/login', methods=['POST'])
 def login_POST():
+
     username = request.form.get('username')
     password = request.form.get('password')
 
-    sql = "SELECT * FROM users WHERE username = '%s' AND password = '%s'";
-    cur = g.db.execute(sql % (username, password))
-    user = cur.fetchone()
+    user = User.query.filter_by(username=username, password=password).first_or_404()
+
     if user:
         session['user'] = dict(user)
         session['logged_in'] = True
@@ -46,8 +47,8 @@ def logout():
 
 
 def render_todo(id, json=False):
-    cur = g.db.execute("SELECT * FROM todos WHERE id ='%s'" % id)
-    todo = cur.fetchone()
+    todo = Todo.query.get_or_404(id=id)
+    #TODO: should security check todo.user.id == g.user.id or throw error
     if json:
         return jsonify(dict(todo))
     return render_template('todo.html', todo=todo)
@@ -70,16 +71,11 @@ def todos():
     per_page = 5
     page = request.args.get(get_page_parameter(), type=int, default=1)
 
-    cur = g.db.execute("SELECT COUNT(*) FROM todos")
-    total_items = cur.fetchone()[0]
+    query = Todo.query.paginate(page, per_page, False)
 
-    cur = g.db.execute("SELECT * FROM todos LIMIT %s OFFSET %s" %(per_page, per_page*(page-1)))
-    todos = cur.fetchall()
+    pagination = Pagination(page=page, per_page=per_page, total=query.total)
 
-    pagination = Pagination(page=page, per_page_parameter=per_page, total=total_items)
-
-
-    return render_template('todos.html', todos=todos, pagination=pagination)
+    return render_template('todos.html', todos=query.items, pagination=pagination)
 
 
 @app.route('/todo', methods=['POST'])
@@ -90,12 +86,9 @@ def todos_POST():
 
     todoDescription = request.form.get('description', '')
     if len(todoDescription) > 0:
-        #TODO: Not so safe... Need to checkk how to prevent SQL injection in python
-        g.db.execute(
-            "INSERT INTO todos (user_id, description) VALUES ('%s', '%s')"
-            % (session['user']['id'], request.form.get('description', ''))
-        )
-        g.db.commit()
+        todo = Todo(user=g.user, description=todoDescription)
+        db.session.add(todo)
+        db.session.commit()
         flash('TODO successfully added', 'success')
     else:
         flash('TODO Description cannot be empty', 'danger')
@@ -104,8 +97,10 @@ def todos_POST():
 def todo_markdone(id, done):
     if not session.get('logged_in'):
         return redirect('/login')
-    g.db.execute("UPDATE todos SET done = '%s' WHERE id ='%s'" % (done, id))
-    g.db.commit()
+
+    todo = Todo.query.get_or_404(id)
+    todo.done = done
+    db.session.commit()
     return redirect('/todo')
 
 @app.route('/todo/done/<id>', methods=['POST'])
@@ -120,7 +115,8 @@ def todo_undo(id):
 def todo_delete(id):
     if not session.get('logged_in'):
         return redirect('/login')
-    g.db.execute("DELETE FROM todos WHERE id ='%s'" % id)
-    g.db.commit()
+    todo = Todo.query.get_or_404(id)
+    db.session.delete(todo)
+    db.session.commit()
     flash('TODO successfully removed', 'success')
     return redirect('/todo')
