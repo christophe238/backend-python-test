@@ -6,7 +6,8 @@ from flask import (
     request,
     session,
     flash,
-    jsonify
+    jsonify,
+    abort
     )
 from flask_paginate import Pagination, get_page_parameter
 from orm import (User, Todo)
@@ -99,6 +100,8 @@ def todo_markdone(id, done):
         return redirect('/login')
 
     todo = Todo.query.get_or_404(id)
+    if todo.user.id != g.user.id:
+        abort(401)
     todo.done = done
     db.session.commit()
     return redirect('/todo')
@@ -115,6 +118,8 @@ def todo_undo(id):
 def todo_delete(id):
     if not session.get('logged_in'):
         return redirect('/login')
+    if todo.user.id != g.user.id:
+        abort(401)
     todo = Todo.query.get_or_404(id)
     db.session.delete(todo)
     db.session.commit()
