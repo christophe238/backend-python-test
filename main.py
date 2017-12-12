@@ -3,10 +3,11 @@
 Usage:
   main.py [run]
   main.py initdb
+  main.py migratedb
 """
 from docopt import docopt
 import subprocess
-import os
+import os, sys
 
 from alayatodo import app
 
@@ -20,7 +21,7 @@ def _run_sql(filename):
         )
     except subprocess.CalledProcessError, ex:
         print ex.output
-        os.exit(1)
+        sys.exit(1)
 
 
 if __name__ == '__main__':
@@ -29,5 +30,9 @@ if __name__ == '__main__':
         _run_sql('resources/database.sql')
         _run_sql('resources/fixtures.sql')
         print "AlayaTodo: Database initialized."
+    elif args['migratedb']:
+        #TODO: Improve to check whether DB has already been initialized...
+        _run_sql('resources/done-column-migration.sql')
+        print "AlayaTodo: Database migrated. done column added."
     else:
         app.run(use_reloader=True)
