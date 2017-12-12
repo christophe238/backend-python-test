@@ -23,3 +23,8 @@ class Todo(db.Model):
     def __init__(self, description, user):
         self.description = description
         self.user = user
+
+    def toJSON(self):
+        return {
+            c.name: getattr(self, c.name) for c in self.__table__.columns
+        }

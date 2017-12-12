@@ -33,7 +33,7 @@ def login_POST():
     user = User.query.filter_by(username=username, password=password).first_or_404()
 
     if user:
-        session['user'] = dict(user)
+        session['user_id'] = user.id
         session['logged_in'] = True
         return redirect('/todo')
 
@@ -43,15 +43,14 @@ def login_POST():
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
-    session.pop('user', None)
+    session.pop('user_id', None)
     return redirect('/')
 
 
 def render_todo(id, json=False):
-    todo = Todo.query.get_or_404(id=id)
-    #TODO: should security check todo.user.id == g.user.id or throw error
+    todo = Todo.query.get_or_404(id)
     if json:
-        return jsonify(dict(todo))
+        return jsonify(todo.toJSON())
     return render_template('todo.html', todo=todo)
 
 @app.route('/todo/<id>', methods=['GET'])
@@ -100,7 +99,7 @@ def todo_markdone(id, done):
         return redirect('/login')
 
     todo = Todo.query.get_or_404(id)
-    if todo.user.id != g.user.id:
+    if todo.user.id != session['user_id']:
         abort(401)
     todo.done = done
     db.session.commit()
@@ -118,9 +117,12 @@ def todo_undo(id):
 def todo_delete(id):
     if not session.get('logged_in'):
         return redirect('/login')
-    if todo.user.id != g.user.id:
-        abort(401)
+
     todo = Todo.query.get_or_404(id)
+
+    if todo.user.id != session['user_id']:
+        abort(401)
+
     db.session.delete(todo)
     db.session.commit()
     flash('TODO successfully removed', 'success')
